@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+  "nspt_server",
+  "nspt_client",
+  "nspt_common",
+]
