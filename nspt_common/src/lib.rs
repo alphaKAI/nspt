@@ -1,6 +1,6 @@
 use rmp_serde::Serializer;
 use serde::{Deserialize, Serialize};
-use std::cmp::min;
+use std::cmp::max;
 use std::io::prelude::*;
 use std::mem::size_of;
 use std::net::{TcpListener, TcpStream};
@@ -94,7 +94,7 @@ pub fn get_transfer_size(bytes_per_ms: f64) -> usize {
 
     let a = find_next_power_of_two(bytes_per_sec / 200) as usize;
 
-    min(a, MIN_SEND_BYTES)
+    max(a, MIN_SEND_BYTES)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
