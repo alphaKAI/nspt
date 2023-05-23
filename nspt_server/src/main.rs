@@ -137,30 +137,29 @@ fn do_test(
         let mut buf: [u8; BUF_SIZE] = [0; BUF_SIZE];
 
         for round in 0..test_times {
-            info!("Start transsfer data unit for speed testing - round {round}");
+            info!(
+                "Start transsfer data unit for speed testing - round {}",
+                round + 1
+            );
 
             let mut next_read_size = BUF_SIZE;
             let mut remain = transfer_size;
 
+            // reqd exact and timeout
             while remain > 0 {
-                let n = test_stream.read(&mut buf).unwrap();
+                let r = test_stream.read_exact(&mut buf[..next_read_size]);
 
-                if n == 0 {
+                if r.is_err() {
                     info!("Connection is closed unexpectely");
                     return;
                 }
 
-                if n == BUF_SIZE {
-                    next_read_size = BUF_SIZE;
-                } else if n != BUF_SIZE {
-                    if n == next_read_size {
-                        next_read_size = BUF_SIZE;
-                    } else {
-                        next_read_size = BUF_SIZE - n;
-                    }
+                remain -= next_read_size;
+                next_read_size = BUF_SIZE;
+                if remain < next_read_size {
+                    next_read_size = remain;
                 }
-
-                remain -= n;
+                println!("transfer_size: {transfer_size}, next_read_size: {next_read_size}, remain: {remain}, BUF_SIZE: {BUF_SIZE}");
             }
 
             info!("Finish Data Unit Transfer");

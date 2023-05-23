@@ -39,12 +39,17 @@ impl FromStr for TestMode {
 
 pub trait ReadWriteStream: Read + Write + Send {
     fn try_clone(&self) -> std::io::Result<Box<dyn ReadWriteStream + Send>>;
+    fn set_read_timeout(&self, dur: Option<std::time::Duration>) -> std::io::Result<()>;
 }
 
 impl ReadWriteStream for TcpStream {
     fn try_clone(&self) -> std::io::Result<Box<dyn ReadWriteStream + Send>> {
         self.try_clone()
             .map(|x| Box::new(x) as Box<dyn ReadWriteStream + Send>)
+    }
+
+    fn set_read_timeout(&self, dur: Option<std::time::Duration>) -> std::io::Result<()> {
+        self.set_read_timeout(dur)
     }
 }
 
@@ -53,6 +58,10 @@ impl ReadWriteStream for UnixStream {
     fn try_clone(&self) -> std::io::Result<Box<dyn ReadWriteStream + Send>> {
         self.try_clone()
             .map(|x| Box::new(x) as Box<dyn ReadWriteStream + Send>)
+    }
+
+    fn set_read_timeout(&self, dur: Option<std::time::Duration>) -> std::io::Result<()> {
+        self.set_read_timeout(dur)
     }
 }
 

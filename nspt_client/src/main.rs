@@ -2,8 +2,8 @@
 use nspt_common::DEFAULT_SOCK_FILE;
 use nspt_common::{
     get_human_friendly_data_size_str, get_human_friendly_speed_str, get_transfer_size,
-    NsptNegProtocol, ReadWriteStream, SerializedDataContainer, TestMode, BUF_SIZE, PROTOCOL_VER,
-    SERVER_PORT_S, TOTAL_SEND_NEG_BYTES,
+    NsptNegProtocol, ReadWriteStream, SerializedDataContainer, TestMode, BUF_SIZE, MIN_SEND_BYTES,
+    PROTOCOL_VER, SERVER_PORT_S, TOTAL_SEND_NEG_BYTES,
 };
 use rand::RngCore;
 use std::net::TcpStream;
@@ -27,15 +27,17 @@ where
     }
 
     println!("Start speed test!");
-    let mut total: usize = 0;
     let prog = transfer_size / BUF_SIZE / 10;
     let mut parcent = 0;
     let mut count = 0;
 
+    let mut next_send_size = BUF_SIZE;
+
     let mut stdout = std::io::stdout();
 
     let start = chrono::Local::now();
-    while total < transfer_size {
+    let mut remain = transfer_size;
+    while remain > 0 {
         if count % prog == 0 {
             if count > 0 {
                 print!("...");
@@ -45,8 +47,16 @@ where
             parcent += 1;
         }
 
-        server_stream.write_all(&buf).unwrap();
-        total += BUF_SIZE;
+        server_stream
+            .write_all(&buf[BUF_SIZE - next_send_size..])
+            .unwrap();
+
+        remain -= next_send_size;
+        next_send_size = BUF_SIZE;
+        if remain < next_send_size {
+            next_send_size = remain;
+        }
+
         count += 1;
     }
     let end = chrono::Local::now();
@@ -171,7 +181,7 @@ fn do_test(
     };
 
     println!(
-        "[Condition] transfer_size: {}, test_times: {test_times}",
+        "[Condition] transfer_size: {}({transfer_size}), test_times: {test_times}",
         get_human_friendly_data_size_str(transfer_size as u64)
     );
 
@@ -253,6 +263,14 @@ struct NsptClientArg {
 
 fn main() {
     let nspt_client_arg = NsptClientArg::from_args();
+
+    if let Some(transfer_bytes) = nspt_client_arg.transfer_bytes {
+        if transfer_bytes < MIN_SEND_BYTES {
+            panic!("{transfer_bytes} bytes ({}) are too smal to test. min value of it is: {MIN_SEND_BYTES}({})", 
+                   get_human_friendly_data_size_str(transfer_bytes as u64),
+                   get_human_friendly_data_size_str(MIN_SEND_BYTES as u64));
+        }
+    }
 
     let (mut server_stream, server_addr): (Box<dyn ReadWriteStream + Send>, String) =
         match nspt_client_arg.test_mode {
