@@ -40,13 +40,13 @@ fn do_test(
                 .unwrap()
                 .to_one_vec(),
             )
-            .unwrap();
+            .expect("Failed to send ServerHello");
 
         let proto_ver_matched = if let NsptNegProtocol::ClientHello(client_proto_ver) =
             SerializedDataContainer::from_reader(&mut client_stream)
                 .unwrap()
                 .to_serializable_data()
-                .unwrap()
+                .expect("Unexpected data received, expected ClientHello")
         {
             client_proto_ver == PROTOCOL_VER
         } else {
@@ -66,14 +66,14 @@ fn do_test(
             SerializedDataContainer::from_reader(&mut client_stream)
                 .unwrap()
                 .to_serializable_data::<NsptNegProtocol>()
-                .unwrap()
+                .expect("Unexpected data received, expected SpeedNegotiation")
         {
             if is_required {
                 if let NsptNegProtocol::StartSpeedNegotiation =
                     SerializedDataContainer::from_reader(&mut client_stream)
                         .unwrap()
                         .to_serializable_data::<NsptNegProtocol>()
-                        .unwrap()
+                        .expect("Unexpected data received, expected StartSpeedNegotiation")
                 {
                     client_stream
                         .write_all(
@@ -83,7 +83,7 @@ fn do_test(
                             .unwrap()
                             .to_one_vec(),
                         )
-                        .expect("Failed to send ClientHello");
+                        .expect("Failed to send StartSpeedNegotiation");
 
                     let mut neg_test_buf: [u8; BUF_SIZE] = [0; BUF_SIZE];
                     let mut total: usize = 0;
@@ -111,7 +111,7 @@ fn do_test(
             SerializedDataContainer::from_reader(&mut client_stream)
                 .unwrap()
                 .to_serializable_data::<NsptNegProtocol>()
-                .unwrap()
+                .expect("Unexpected data received, expected NotifyBufferSize")
         {
             info!(
                 "transfer_size: {}, test_times: {test_times}",
@@ -132,7 +132,7 @@ fn do_test(
                     .unwrap()
                     .to_one_vec(),
             )
-            .expect("Failed to send ClientHello");
+            .expect("Failed to send StartSpeedTest");
 
         let mut buf: [u8; BUF_SIZE] = [0; BUF_SIZE];
 
@@ -173,7 +173,7 @@ fn do_test(
             SerializedDataContainer::from_reader(&mut client_stream)
                 .unwrap()
                 .to_serializable_data::<NsptNegProtocol>()
-                .unwrap()
+                .expect("Unexpected data received, expected EndOfTransfer")
         {
         } else {
             panic!("Protocol err")
@@ -185,7 +185,7 @@ fn do_test(
                     .unwrap()
                     .to_one_vec(),
             )
-            .expect("Failed to send ClientHello");
+            .expect("Failed to send EndOfSpeedTest");
     }
 }
 
