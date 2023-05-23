@@ -1,15 +1,15 @@
-use nspt_common::{
-    get_human_friendly_data_size_str, get_human_friendly_speed_str, get_transfer_size,
-    NsptNegProtocol, ReadWriteStream, SerializedDataContainer, TestMode, BUF_SIZE,
-    PROTOCOL_VER, SERVER_PORT_S, TOTAL_SEND_NEG_BYTES,
-};
 #[cfg(not(target_os = "windows"))]
 use nspt_common::DEFAULT_SOCK_FILE;
+use nspt_common::{
+    get_human_friendly_data_size_str, get_human_friendly_speed_str, get_transfer_size,
+    NsptNegProtocol, ReadWriteStream, SerializedDataContainer, TestMode, BUF_SIZE, PROTOCOL_VER,
+    SERVER_PORT_S, TOTAL_SEND_NEG_BYTES,
+};
 use rand::RngCore;
 use std::net::TcpStream;
 #[cfg(not(target_os = "windows"))]
 use std::os::unix::net::UnixStream;
-use std::{io::prelude::*, mem::size_of};
+use std::{io::prelude::*, io::Write, mem::size_of};
 use structopt::StructOpt;
 
 fn do_speed_test<T>(server_stream: &mut T, transfer_size: usize) -> f64
@@ -26,20 +26,22 @@ where
         buf[i + 3] = bytes[3];
     }
 
-    let mut total: usize = 0;
-
     println!("Start speed test!");
+    let mut total: usize = 0;
     let prog = transfer_size / BUF_SIZE / 10;
     let mut parcent = 0;
     let mut count = 0;
-    let start = chrono::Local::now();
 
+    let mut stdout = std::io::stdout();
+
+    let start = chrono::Local::now();
     while total < transfer_size {
         if count % prog == 0 {
             if count > 0 {
                 print!("...");
             }
             print!("{}%", parcent * 10);
+            let _ = stdout.flush();
             parcent += 1;
         }
 
@@ -94,7 +96,7 @@ fn do_test(
             panic!("Protocol version mismatched! this proto-ver: {PROTOCOL_VER} but server proto-ver: {server_proto_ver}");
         }
     }
-    println!("Excahnged Hello message.");
+    println!(" -> End exchanging Hello message.");
 
     let transfer_size = if let Some(transfer_bytes) = transfer_bytes {
         server_stream
@@ -105,7 +107,7 @@ fn do_test(
                 .unwrap()
                 .to_one_vec(),
             )
-            .expect("Failed to send ClientHello");
+            .expect("Failed to send SpeedNegotiation");
 
         transfer_bytes
     } else {
@@ -128,7 +130,7 @@ fn do_test(
                 .unwrap()
                 .to_one_vec(),
             )
-            .expect("Failed to send ClientHello");
+            .expect("Failed to send SpeedNegotiation");
 
         server_stream
             .write_all(
@@ -138,7 +140,7 @@ fn do_test(
                 .unwrap()
                 .to_one_vec(),
             )
-            .expect("Failed to send ClientHello");
+            .expect("Failed to send StartSpeedNegotiation");
 
         if let NsptNegProtocol::StartSpeedNegotiation =
             SerializedDataContainer::from_reader(&mut server_stream)
@@ -148,7 +150,7 @@ fn do_test(
         {
             let mut total: usize = 0;
 
-            println!("start small speed test for negotiation...");
+            println!("Start small speed test for negotiation...");
             let start = chrono::Local::now();
 
             while total < TOTAL_SEND_NEG_BYTES {
@@ -157,20 +159,19 @@ fn do_test(
             }
             let end = chrono::Local::now();
 
-            println!("end of data transfer...");
+            println!(" -> End of data transfer...");
 
             let elapse = (end - start).num_milliseconds(); //.to_std().unwrap().as_millis();
             let bytes_per_ms = TOTAL_SEND_NEG_BYTES as f64 / elapse as f64;
 
             get_transfer_size(bytes_per_ms)
-            // 1024 * 1024 * 1024 * 2
         } else {
             panic!("Protocol err")
         }
     };
 
     println!(
-        "transfer_size: {}, test_times: {test_times}",
+        "[Condition] transfer_size: {}, test_times: {test_times}",
         get_human_friendly_data_size_str(transfer_size as u64)
     );
 
@@ -183,7 +184,7 @@ fn do_test(
                 .unwrap()
                 .to_one_vec(),
             )
-            .expect("Failed to send ClientHello");
+            .expect("Failed to send NotifyBufferSize");
 
         if let NsptNegProtocol::StartSpeedTest =
             SerializedDataContainer::from_reader(&mut server_stream)
@@ -205,7 +206,7 @@ fn do_test(
                     .unwrap()
                     .to_one_vec(),
                 )
-                .expect("Failed to send ClientHello");
+                .expect("Failed to send EndOfTransfer");
 
             total
         } else {
@@ -273,7 +274,7 @@ fn main() {
         };
     println!("Server addr is: {server_addr}");
 
-    println!("The Connection is Established!");
+    println!("Connection is Established!");
     do_test(
         &mut server_stream,
         nspt_client_arg.test_times,
