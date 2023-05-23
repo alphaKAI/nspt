@@ -32,11 +32,10 @@ where
     let mut count = 0;
 
     let mut next_send_size = BUF_SIZE;
-
     let mut stdout = std::io::stdout();
+    let mut remain = transfer_size;
 
     let start = chrono::Local::now();
-    let mut remain = transfer_size;
     while remain > 0 {
         if count % prog == 0 {
             if count > 0 {

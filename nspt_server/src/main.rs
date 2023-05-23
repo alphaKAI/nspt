@@ -145,7 +145,6 @@ fn do_test(
             let mut next_read_size = BUF_SIZE;
             let mut remain = transfer_size;
 
-            // reqd exact and timeout
             while remain > 0 {
                 let r = test_stream.read_exact(&mut buf[..next_read_size]);
 
@@ -159,7 +158,7 @@ fn do_test(
                 if remain < next_read_size {
                     next_read_size = remain;
                 }
-                println!("transfer_size: {transfer_size}, next_read_size: {next_read_size}, remain: {remain}, BUF_SIZE: {BUF_SIZE}");
+                // println!("transfer_size: {transfer_size}, next_read_size: {next_read_size}, remain: {remain}, BUF_SIZE: {BUF_SIZE}");
             }
 
             info!("Finish Data Unit Transfer");
