@@ -118,24 +118,24 @@ pub enum NsptNegProtocol {
     EndOfTransfer,
 }
 
-pub fn get_human_friendly_speed_str(bytes_per_ms: f64) -> String {
-    let bytes_per_sec = bytes_per_ms * 1000.;
-    let bits_per_sec = bytes_per_sec * 8.;
-    let k_bytes_per_sec = bytes_per_sec / 1024.;
-    let k_bits_per_sec = k_bytes_per_sec * 8.;
-    let m_bytes_per_sec = k_bytes_per_sec / 1024.;
-    let m_bits_per_sec = m_bytes_per_sec * 8.;
-    let g_bytes_per_sec = m_bytes_per_sec / 1024.;
-    let g_bits_per_sec = g_bytes_per_sec * 8.;
+pub fn get_human_friendly_speed_str(bytes_per_ms: usize) -> String {
+    let bytes_per_sec = bytes_per_ms * 1000;
+    let bits_per_sec = bytes_per_sec * 8;
+    let k_bytes_per_sec = bytes_per_sec / 1024;
+    let k_bits_per_sec = k_bytes_per_sec * 8;
+    let m_bytes_per_sec = k_bytes_per_sec / 1024;
+    let m_bits_per_sec = m_bytes_per_sec * 8;
+    let g_bytes_per_sec = m_bytes_per_sec / 1024;
+    let g_bits_per_sec = g_bytes_per_sec * 8;
 
-    if g_bits_per_sec as u64 != 0 {
-        format!("{} Gb/s", g_bits_per_sec as u64)
-    } else if m_bits_per_sec as u64 != 0 {
-        format!(" {} Mb/s", m_bits_per_sec as u64)
-    } else if k_bits_per_sec as u64 != 0 {
-        format!("{} Kb/s", k_bits_per_sec as u64)
+    if g_bits_per_sec != 0 {
+        format!("{g_bits_per_sec} Gb/s")
+    } else if m_bits_per_sec != 0 {
+        format!("{m_bits_per_sec} Mb/s")
+    } else if k_bits_per_sec != 0 {
+        format!("{k_bits_per_sec} Kb/s")
     } else {
-        format!("{} b/s", bits_per_sec as u64)
+        format!("{bits_per_sec} b/s")
     }
 }
 

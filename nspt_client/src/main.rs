@@ -1,7 +1,7 @@
 #[cfg(not(target_os = "windows"))]
 use nspt_common::DEFAULT_SOCK_FILE;
 use nspt_common::{
-    get_human_friendly_data_size_str, get_human_friendly_speed_str, calc_transfer_size,
+    calc_transfer_size, get_human_friendly_data_size_str, get_human_friendly_speed_str,
     NsptNegProtocol, ReadWriteStream, SerializedDataContainer, TestMode, BUF_SIZE, MIN_SEND_BYTES,
     PROTOCOL_VER, SERVER_PORT_S, TOTAL_SEND_NEG_BYTES,
 };
@@ -12,18 +12,16 @@ use std::os::unix::net::UnixStream;
 use std::{io::prelude::*, io::Write, mem::size_of};
 use structopt::StructOpt;
 
-fn do_speed_test<T>(server_stream: &mut T, transfer_size: usize) -> f64
+fn do_speed_test<T>(server_stream: &mut T, transfer_size: usize) -> usize
 where
     T: Read + Write,
 {
     let mut buf = [0; BUF_SIZE];
     let mut rng = rand::thread_rng();
-    for i in 0..BUF_SIZE / size_of::<u32>() {
-        let bytes: &[u8; 4] = &rng.next_u32().to_le_bytes();
-        buf[i] = bytes[0];
-        buf[i + 1] = bytes[1];
-        buf[i + 2] = bytes[2];
-        buf[i + 3] = bytes[3];
+    for i in 0..BUF_SIZE / size_of::<u64>() {
+        for (j, v) in rng.next_u64().to_le_bytes().iter().enumerate() {
+            buf[i + j] = *v;
+        }
     }
 
     println!("Start speed test!");
@@ -61,8 +59,8 @@ where
     let end = chrono::Local::now();
     println!();
 
-    let elapse = (end - start).num_milliseconds(); //.to_std().unwrap().as_millis();
-    let bytes_per_ms = transfer_size as f64 / elapse as f64;
+    let elapse = (end - start).num_milliseconds() as usize; //.to_std().unwrap().as_millis();
+    let bytes_per_ms = transfer_size / elapse;
 
     println!(
         " -> Finish Data Transfer! speed: {}",
@@ -201,7 +199,7 @@ fn do_test(
                 .to_serializable_data::<NsptNegProtocol>()
                 .unwrap()
         {
-            let mut total = 0.;
+            let mut total = 0;
 
             for _ in 0..test_times {
                 total += do_speed_test(&mut server_stream, transfer_size);
@@ -232,7 +230,7 @@ fn do_test(
         {
             println!(
                 "average: {}",
-                get_human_friendly_speed_str(total / (test_times as f64))
+                get_human_friendly_speed_str(total / (test_times as usize))
             );
         } else {
             panic!("Protocol err")
