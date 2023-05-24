@@ -98,10 +98,10 @@ fn find_next_power_of_two(n: u64) -> u64 {
     power_of_two
 }
 
-pub fn get_transfer_size(bytes_per_ms: f64) -> usize {
+pub fn calc_transfer_size(bytes_per_ms: f64) -> usize {
     let bytes_per_sec = (bytes_per_ms * 1000.) as u64;
 
-    let a = find_next_power_of_two(bytes_per_sec / 200) as usize;
+    let a = find_next_power_of_two(bytes_per_sec) as usize;
 
     max(a, MIN_SEND_BYTES)
 }

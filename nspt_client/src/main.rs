@@ -1,7 +1,7 @@
 #[cfg(not(target_os = "windows"))]
 use nspt_common::DEFAULT_SOCK_FILE;
 use nspt_common::{
-    get_human_friendly_data_size_str, get_human_friendly_speed_str, get_transfer_size,
+    get_human_friendly_data_size_str, get_human_friendly_speed_str, calc_transfer_size,
     NsptNegProtocol, ReadWriteStream, SerializedDataContainer, TestMode, BUF_SIZE, MIN_SEND_BYTES,
     PROTOCOL_VER, SERVER_PORT_S, TOTAL_SEND_NEG_BYTES,
 };
@@ -16,7 +16,7 @@ fn do_speed_test<T>(server_stream: &mut T, transfer_size: usize) -> f64
 where
     T: Read + Write,
 {
-    let mut buf: [u8; BUF_SIZE] = [0; BUF_SIZE];
+    let mut buf = [0; BUF_SIZE];
     let mut rng = rand::thread_rng();
     for i in 0..BUF_SIZE / size_of::<u32>() {
         let bytes: &[u8; 4] = &rng.next_u32().to_le_bytes();
@@ -121,7 +121,7 @@ fn do_test(
         transfer_bytes
     } else {
         // Determin amount of transfer size
-        let mut neg_test_buf: [u8; BUF_SIZE] = [0; BUF_SIZE];
+        let mut neg_test_buf = [0; BUF_SIZE];
         let mut rng = rand::thread_rng();
         for i in 0..BUF_SIZE / size_of::<u32>() {
             let bytes: &[u8; 4] = &rng.next_u32().to_le_bytes();
@@ -170,10 +170,10 @@ fn do_test(
 
             println!(" -> End of data transfer...");
 
-            let elapse = (end - start).num_milliseconds(); //.to_std().unwrap().as_millis();
+            let elapse = (end - start).num_milliseconds();
             let bytes_per_ms = TOTAL_SEND_NEG_BYTES as f64 / elapse as f64;
 
-            get_transfer_size(bytes_per_ms)
+            calc_transfer_size(bytes_per_ms)
         } else {
             panic!("Protocol err")
         }
